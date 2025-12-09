@@ -1,22 +1,25 @@
+import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.*;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import javax.swing.*;
-import javax.swing.plaf.nimbus.NimbusLookAndFeel;
-import javax.swing.table.DefaultTableModel;
+import java.util.ArrayList;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
+// ========================================================
+//     DESKTOP WORKOUT TRACKER (FINAL SIMPLIFIED INPUT)
+// ========================================================
 
 public class GymTracker {
 
     // ========================================================
-    // STEP 1-5: Data Classes (Unchanged)
+    // STEP 1-5: Data Classes (StrengthExercise simplified)
     // ========================================================
 
     static abstract class Exercise implements Serializable {
@@ -34,10 +37,15 @@ public class GymTracker {
         private int sets;
         private int reps;
         private double weight;
-        public StrengthExercise(String name, String muscleGroup, int sets, int reps, double weight) {
+        
+        // REVISED Constructor: Uses placeholder values for calculation
+        public StrengthExercise(String name, String muscleGroup) {
             super(name, muscleGroup);
-            this.sets = sets; this.reps = reps; this.weight = weight;
+            this.sets = 1; 
+            this.reps = 1;
+            this.weight = 100.0; // Default weight for volume/PR calculation
         }
+        
         public double getVolume() { return sets * reps * weight; }
         @Override
         public double getPerformanceMetric() { return weight * (1 + reps / 30.0); } // Estimated 1RM
@@ -103,7 +111,7 @@ public class GymTracker {
     }
 
     // ========================================================
-    // STEP 6: ExerciseLibrary & WorkoutTemplate (Unchanged)
+    // STEP 6: ExerciseLibrary & WorkoutTemplate
     // ========================================================
     
     static class WorkoutTemplate {
@@ -138,21 +146,9 @@ public class GymTracker {
             exercises.add("Leg Press (Legs)");
 
             templates = new ArrayList<>();
-            templates.add(new WorkoutTemplate("Upper Body", new String[]{
-                "Incline Chest Press (Chest)", 
-                "Lat Pulldown (Back)", 
-                "Shoulder Press (Shoulders)"
-            }));
-            templates.add(new WorkoutTemplate("Lower Body", new String[]{
-                "Squat (Legs)", 
-                "Deadlift (Back)", 
-                "Leg Press (Legs)"
-            }));
-            templates.add(new WorkoutTemplate("Full Body", new String[]{
-                "Squat (Legs)", 
-                "Bench Press (Chest)", 
-                "Deadlift (Back)"
-            }));
+            templates.add(new WorkoutTemplate("Upper Body", new String[]{"Incline Chest Press (Chest)", "Lat Pulldown (Back)", "Shoulder Press (Shoulders)"}));
+            templates.add(new WorkoutTemplate("Lower Body", new String[]{"Squat (Legs)", "Deadlift (Back)", "Leg Press (Legs)"}));
+            templates.add(new WorkoutTemplate("Full Body", new String[]{"Squat (Legs)", "Bench Press (Chest)", "Deadlift (Back)"}));
         }
         public java.util.List<String> getExercises() { return exercises; }
         public java.util.List<WorkoutTemplate> getTemplates() { return templates; }
@@ -160,7 +156,7 @@ public class GymTracker {
 
 
     // ========================================================
-    // STEP 7: GUI (Modified)
+    // STEP 7: GUI REVISED FOR MODERN DESKTOP VIEW
     // ========================================================
     static class GymTrackerGUI extends JFrame {
 
@@ -168,78 +164,63 @@ public class GymTracker {
         private ExerciseLibrary library = new ExerciseLibrary();
         private ProgressTracker tracker;
         
+        // Active Session Components
         private WorkoutSession currentSession;
         private DefaultTableModel currentWorkoutTableModel;
         private ScheduledExecutorService scheduler;
         private long startTime;
         private JLabel timerLabel;
-
+        
+        // UI Components
         private JTabbedPane tabbedPane;
         private JTextArea historyTextArea;
         private JTextArea progressStatsArea;
-
-        private JComboBox<String> exerciseDropdown;
-        // Sets, reps, and weight fields are REMOVED to simplify input
         
-        private final Color DARK_BACKGROUND = new Color(28, 28, 30);
-        private final Color CARD_BACKGROUND = new Color(45, 45, 50);
-        private final Color TEXT_COLOR = new Color(240, 240, 240);
-        private final Color ACCENT_BLUE = new Color(50, 150, 255);
-        private final Color ACCENT_RED = new Color(255, 69, 58);
+        // Input fields for adding exercises
+        private JComboBox<String> exerciseDropdown;
+        // Fields below are no longer used for input but kept as null for safety
+        private JTextField setsField, repsField, weightField; 
+        
+        // Define standard colors
+        private final Color DARK_BACKGROUND = new Color(28, 28, 30); // Primary Background
+        private final Color CARD_BACKGROUND = new Color(45, 45, 50); // Card/Inner Panel Background
+        private final Color TEXT_COLOR = new Color(240, 240, 240); // Light Text
+        private final Color ACCENT_BLUE = new Color(50, 150, 255); // Primary Accent
+        private final Color ACCENT_RED = new Color(255, 69, 58); // Danger/Finish Button
 
         public GymTrackerGUI() {
             loadProgress();
             currentSession = new WorkoutSession();
 
-            setTitle("Sculpt");
+            setTitle("Modern Workout Tracker");
             setSize(900, 700);
             setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-            // Set look & feel and override Nimbus dropdown colors to force readable popup
+            
+            // Set up look and feel (Nimbus with custom colors)
             try {
-                UIManager.setLookAndFeel(new NimbusLookAndFeel());
-
-                // Keep general Nimbus tweaks
+                UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
                 UIManager.put("control", DARK_BACKGROUND);
                 UIManager.put("nimbusBase", new Color(60, 60, 60));
                 UIManager.put("nimbusBlueGrey", new Color(45, 45, 45));
                 UIManager.put("text", TEXT_COLOR);
-
-                // Override comboBox popup & renderer defaults for readable popup
-                UIManager.put("ComboBox.popupBackground", Color.WHITE);
-                UIManager.put("ComboBox.background", Color.WHITE);
-                UIManager.put("ComboBox.foreground", Color.BLACK);
-                UIManager.put("ComboBox:\"ComboBox.listRenderer\"[Enabled].background", Color.WHITE);
-                UIManager.put("ComboBox:\"ComboBox.listRenderer\"[Selected].background", new Color(220, 240, 255));
-                UIManager.put("ComboBox:\"ComboBox.listRenderer\"[Enabled].textForeground", Color.BLACK);
-                UIManager.put("ComboBox:\"ComboBox.listRenderer\"[Selected].textForeground", Color.BLACK);
-                // --- after setting NimbusLookAndFeel and before creating components ---
-                UIManager.put("TextField.background", Color.BLACK);
-                UIManager.put("TextField.foreground", Color.WHITE);
-                UIManager.put("TextField.caretForeground", Color.WHITE);
-                UIManager.put("TextField.inactiveForeground", Color.WHITE);
-                UIManager.put("TextField.selectionBackground", new Color(40, 40, 40));
-                UIManager.put("TextField.selectionForeground", Color.WHITE);
-
-                // also ensure combo editor follows same defaults
-                UIManager.put("ComboBox.background", Color.WHITE); // editor field we'll style manually
-                UIManager.put("ComboBox.foreground", Color.BLACK);
-
-
             } catch (Exception ignored) {}
             
             getContentPane().setBackground(DARK_BACKGROUND);
             
-            JLabel titleLabel = new JLabel("Sculpt", SwingConstants.CENTER);
-            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
+            // --- Header Title ---
+            JLabel titleLabel = new JLabel("💪 Modern Workout Tracker", SwingConstants.CENTER);
+            titleLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
             titleLabel.setForeground(TEXT_COLOR);
             titleLabel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
             add(titleLabel, BorderLayout.NORTH);
 
+            // --- Tabbed Pane ---
             tabbedPane = createTabbedPane();
-            tabbedPane.addTab("Workout", createWorkoutScreen());
-            tabbedPane.addTab("History", createHistoryScreen());
-            tabbedPane.addTab("Progress", createProgressScreen());
+
+            tabbedPane.addTab("💪 Workout", createWorkoutScreen());
+            tabbedPane.addTab("🗓️ History", createHistoryScreen());
+            tabbedPane.addTab("🏆 Progress", createProgressScreen());
+
             add(tabbedPane, BorderLayout.CENTER);
 
             updateHistoryAndProgressDisplays();
@@ -247,11 +228,13 @@ public class GymTracker {
             setVisible(true);
         }
         
+        // --- UI Component Creators ---
+        
         private JTabbedPane createTabbedPane() {
             JTabbedPane tp = new JTabbedPane();
-            tp.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            tp.setFont(new Font("SansSerif", Font.BOLD, 14));
             tp.setForeground(TEXT_COLOR);
-            tp.setBackground(new Color(38, 38, 40));
+            tp.setBackground(new Color(38, 38, 40)); 
             tp.setOpaque(true);
             tp.setBorder(BorderFactory.createEmptyBorder(0, 15, 0, 15));
             return tp;
@@ -262,7 +245,7 @@ public class GymTracker {
             mainPanel.setBackground(DARK_BACKGROUND);
             
             JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, createTemplatePanel(), createActiveSessionPanel());
-            splitPane.setDividerLocation(300);
+            splitPane.setDividerLocation(300); 
             splitPane.setDividerSize(5);
             splitPane.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
             splitPane.setBackground(DARK_BACKGROUND);
@@ -291,8 +274,7 @@ public class GymTracker {
             leftPanel.add(Box.createVerticalStrut(20));
             
             for (WorkoutTemplate template : library.getTemplates()) {
-                JButton button = createTemplateButton(template);
-                leftPanel.add(button);
+                leftPanel.add(createTemplateButton(template));
                 leftPanel.add(Box.createVerticalStrut(10));
             }
             
@@ -311,44 +293,16 @@ public class GymTracker {
             button.setHorizontalAlignment(SwingConstants.LEFT);
             button.setBackground(CARD_BACKGROUND);
             button.setForeground(TEXT_COLOR);
-            button.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            button.setFont(new Font("SansSerif", Font.PLAIN, 12));
             button.setFocusPainted(false);
             button.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(new Color(60, 60, 60)),
                     BorderFactory.createEmptyBorder(10, 10, 10, 10)
             ));
-
-            // Load template exercises when clicked
-            button.addActionListener(e -> {
-                startNewSession(template.getName());
-                loadTemplateIntoSession(template);
-            });
-
+            button.addActionListener(e -> startNewSession(template.getName()));
             button.setMaximumSize(new Dimension(300, 80));
             button.setAlignmentX(Component.LEFT_ALIGNMENT);
             return button;
-        }
-
-        // Load template exercises into current session
-        private void loadTemplateIntoSession(WorkoutTemplate template) {
-            currentWorkoutTableModel.setRowCount(0);
-            currentSession = new WorkoutSession();
-
-            for (String ex : template.exercises) {
-                String[] parts = ex.split(" \\(");
-                String name = parts[0];
-                String muscle = parts.length > 1 ? parts[1].replace(")", "") : "";
-
-                // Sets the template exercises with placeholder values 
-                StrengthExercise exercise = new StrengthExercise(name, muscle, 0, 0, 0);
-                WorkoutEntry entry = new WorkoutEntry(exercise);
-
-                currentSession.addEntry(entry);
-
-                currentWorkoutTableModel.addRow(new Object[]{
-                        name, "-", "-", "-", "-"
-                });
-            }
         }
 
         private JPanel createActiveSessionPanel() {
@@ -356,6 +310,7 @@ public class GymTracker {
             rightPanel.setBackground(CARD_BACKGROUND);
             rightPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
             
+            // --- Top Control Bar (Timer and Finish) ---
             JPanel topControl = new JPanel(new BorderLayout());
             topControl.setBackground(CARD_BACKGROUND);
             
@@ -365,13 +320,14 @@ public class GymTracker {
             JButton finishButton = new JButton("FINISH SESSION");
             finishButton.setBackground(ACCENT_RED);
             finishButton.setForeground(Color.WHITE);
-            finishButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            finishButton.setFont(new Font("SansSerif", Font.BOLD, 14));
             finishButton.setFocusPainted(false);
             finishButton.addActionListener(e -> finishWorkout());
             topControl.add(finishButton, BorderLayout.EAST);
             
             rightPanel.add(topControl, BorderLayout.NORTH);
             
+            // --- Current Session Table ---
             JPanel tableContainer = new JPanel(new BorderLayout());
             tableContainer.setBackground(CARD_BACKGROUND);
             JLabel currentSessionTitle = createStyledLabel("Current Session", 16, true);
@@ -388,68 +344,53 @@ public class GymTracker {
             
             rightPanel.add(tableContainer, BorderLayout.CENTER);
             
+            // --- Input Panel (Add Exercise) ---
             JPanel inputPanel = createInputPanel();
             rightPanel.add(inputPanel, BorderLayout.SOUTH);
             
             return rightPanel;
         }
 
+        // REVISED: Only shows Exercise Dropdown and Button
         private JPanel createInputPanel() {
             JPanel panel = new JPanel(new BorderLayout(10, 5));
             panel.setBackground(CARD_BACKGROUND);
             panel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(new Color(80, 80, 80)), "Add Exercise", 
                 javax.swing.border.TitledBorder.LEFT, javax.swing.border.TitledBorder.TOP, 
-                new Font("Segoe UI", Font.BOLD, 14), TEXT_COLOR));
+                new Font("SansSerif", Font.BOLD, 14), TEXT_COLOR));
             
-            // Using a flow layout for simple horizontal alignment of the two remaining components
-            JPanel fieldsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
+            JPanel fieldsPanel = new JPanel(new GridBagLayout());
             fieldsPanel.setBackground(CARD_BACKGROUND);
+            GridBagConstraints gbc = new GridBagConstraints();
+            gbc.insets = new Insets(5, 5, 5, 5);
+            gbc.fill = GridBagConstraints.HORIZONTAL;
             
+            // Only the exercise dropdown remains
             exerciseDropdown = new JComboBox<>(library.getExercises().toArray(new String[0]));
-            // Apply light background and readable text for editor and popup renderer
             styleDropdown(exerciseDropdown);
-            fixComboBoxRenderer(exerciseDropdown); // Retains light background for choices
+            
+            // Row 1: Label for Exercise
+            gbc.gridy = 0;
+            gbc.weightx = 0.8; gbc.gridx = 0; 
+            fieldsPanel.add(createStyledLabel("Exercise:", 12, false), gbc);
 
-            JButton addButton = new JButton("ADD SET");
+            // Row 2: Input Field for Exercise (takes up more space)
+            gbc.gridy = 1;
+            gbc.weightx = 0.8; gbc.gridx = 0; 
+            fieldsPanel.add(exerciseDropdown, gbc);
+            
+            JButton addButton = new JButton("ADD EXERCISE"); 
             stylePrimaryButton(addButton);
             addButton.addActionListener(e -> addEntry());
             
-            // Only the dropdown and button remain
-            fieldsPanel.add(createStyledLabel("Exercise:", 12, false));
-            fieldsPanel.add(exerciseDropdown);
-            fieldsPanel.add(addButton);
+            // Add Button (Row 2, Column 1)
+            gbc.gridy = 1;
+            gbc.weightx = 0.2; gbc.gridx = 1;
+            fieldsPanel.add(addButton, gbc);
 
             panel.add(fieldsPanel, BorderLayout.CENTER);
             return panel;
-        }
-
-        /**
-         * Custom renderer to ensure the combo popup list items have the correct background and foreground color.
-         * The background is now explicitly set to WHITE for unselected items.
-         */
-        private void fixComboBoxRenderer(JComboBox<String> box) {
-            box.setRenderer(new DefaultListCellRenderer() {
-                @Override
-                public Component getListCellRendererComponent(
-                        JList<?> list, Object value, int index,
-                        boolean isSelected, boolean cellHasFocus) {
-
-                    Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
-
-                    if (isSelected) {
-                        // Background color when selected (light blue)
-                        c.setBackground(new Color(220, 240, 255));
-                        c.setForeground(Color.BLACK);
-                    } else {
-                        // Light Gray background for unselected choices
-                        c.setBackground(Color.WHITE); // *** CHANGED TO PURE WHITE ***
-                        c.setForeground(Color.BLACK);
-                    }
-
-                    return c;
-                }
-            });
         }
 
         private JPanel createHistoryScreen() {
@@ -492,49 +433,59 @@ public class GymTracker {
             return panel;
         }
 
+
+        // --- Styling Helpers ---
+
         private JLabel createStyledLabel(String text, int size, boolean bold) {
             JLabel label = new JLabel(text);
             label.setForeground(TEXT_COLOR);
             int style = bold ? Font.BOLD : Font.PLAIN;
-            label.setFont(new Font("Segoe UI", style, size));
+            label.setFont(new Font("SansSerif", style, size));
             return label;
         }
-
+        
         private void stylePrimaryButton(JButton button) {
             button.setBackground(ACCENT_BLUE);
             button.setForeground(Color.WHITE);
-            button.setFont(new Font("Segoe UI", Font.BOLD, 14));
+            button.setFont(new Font("SansSerif", Font.BOLD, 14));
             button.setFocusPainted(false);
             button.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         }
 
         private JTextField createDarkTextField(int columns) {
-            // NOTE: This method is now obsolete as text fields are removed, but kept here for potential future use.
-            JTextField field = new JTextField(columns) {
-                @Override
-                public void updateUI() {
-                    super.updateUI();
-                    // Force colors after Nimbus resets them
-                    setBackground(Color.BLACK);
-                    setForeground(Color.WHITE);
-                    setCaretColor(Color.WHITE);
-                    setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100), 1));
-                }
-            };
-            field.setBackground(Color.BLACK);
+            JTextField field = new JTextField(columns);
+            field.setBackground(new Color(70, 70, 70)); // Adjusted for general visibility
             field.setForeground(Color.WHITE);
             field.setCaretColor(Color.WHITE);
-            field.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100), 1));
+            field.setBorder(BorderFactory.createLineBorder(new Color(80, 80, 80), 1));
             return field;
         }
-
         
+        // **MODIFIED METHOD: Includes custom renderer for white background/black text in choices**
         private void styleDropdown(JComboBox<String> dropdown) {
-            // Editor/background style for the dropdown field (keeps it readable)
-            dropdown.setBackground(Color.WHITE);
-            dropdown.setForeground(Color.BLACK);
-            dropdown.setBorder(BorderFactory.createLineBorder(new Color(150, 150, 150), 1));
-            dropdown.setFocusable(false);
+            // Background of the JComboBox when closed
+            dropdown.setBackground(new Color(70, 70, 70)); 
+            dropdown.setForeground(TEXT_COLOR);
+            dropdown.setBorder(BorderFactory.createLineBorder(new Color(80, 80, 80), 1));
+            
+            // Custom Renderer for the Popup List (the "choices")
+            dropdown.setRenderer(new DefaultListCellRenderer() {
+                @Override
+                public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                    JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                    
+                    // Set default colors for choices (white background, black text)
+                    label.setBackground(Color.WHITE);
+                    label.setForeground(Color.BLACK);
+                    
+                    // Handle selection colors
+                    if (isSelected) {
+                        label.setBackground(new Color(180, 220, 255)); // Light Blue highlight for selection
+                        label.setForeground(Color.BLACK); // Keep foreground black on selection
+                    }
+                    return label;
+                }
+            });
         }
 
         private void styleDesktopTable(JTable table) {
@@ -544,11 +495,13 @@ public class GymTracker {
             table.setGridColor(new Color(60, 60, 60));
             table.getTableHeader().setBackground(new Color(50, 50, 50));
             table.getTableHeader().setForeground(TEXT_COLOR);
-            table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
+            table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 12));
             table.setRowHeight(25);
-            table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+            table.setFont(new Font("SansSerif", Font.PLAIN, 12));
         }
 
+        // --- Session Management Logic ---
+        
         public void startNewSession(String name) {
             currentSession = new WorkoutSession();
             currentWorkoutTableModel.setRowCount(0);
@@ -563,9 +516,18 @@ public class GymTracker {
             JOptionPane.showMessageDialog(this, "New Session Started: " + name, "Start", JOptionPane.INFORMATION_MESSAGE);
         }
         
+        private void startTimerOnly() {
+            if (scheduler == null || scheduler.isShutdown()) {
+                startTime = System.currentTimeMillis();
+                scheduler = Executors.newSingleThreadScheduledExecutor();
+                scheduler.scheduleAtFixedRate(this::updateTimer, 0, 1, TimeUnit.SECONDS);
+            }
+        }
+        
         private void stopTimer() {
             if (scheduler != null) {
                 scheduler.shutdownNow();
+                scheduler = null;
                 timerLabel.setText("0:00");
             }
         }
@@ -594,42 +556,41 @@ public class GymTracker {
             
             tabbedPane.setSelectedIndex(1);
             JOptionPane.showMessageDialog(this, "Session saved!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            
+            currentSession = new WorkoutSession();
+            currentWorkoutTableModel.setRowCount(0);
         }
 
-        /**
-         * Simplified addEntry method. Uses placeholder values for Sets, Reps, and Weight
-         * since input fields were removed.
-         */
+        // REVISED: Only reads the exercise name
         private void addEntry() {
             try {
                 String selected = (String) exerciseDropdown.getSelectedItem();
                 
-                // === PLACEHOLDER VALUES ===
-                int sets = 1;
-                int reps = 1;
-                double weight = 0.0;
-                // ==========================
-
-                if (selected == null || selected.isEmpty())
-                    return;
-
                 String[] parts = selected.split(" \\(");
                 String name = parts[0];
-                String muscle = parts.length > 1 ? parts[1].replace(")", "") : "";
+                String muscle = parts.length > 1 ? parts[1].replace(")", "") : "Unknown";
 
-                StrengthExercise ex = new StrengthExercise(name, muscle, sets, reps, weight);
+                // Uses the simplified constructor with default values
+                StrengthExercise ex = new StrengthExercise(name, muscle);
                 WorkoutEntry entry = new WorkoutEntry(ex);
                 currentSession.addEntry(entry);
 
-                // The table will show the placeholder values now: 1, 1, 0.0, 0.0
+                // Add to the active session table (Uses the static default values for sets/reps/weight)
                 currentWorkoutTableModel.addRow(new Object[]{
-                        name, sets, reps, String.format("%.1f", weight), String.format("%.1f", entry.getVolume())
+                        name, ex.getSets(), ex.getReps(), String.format("%.1f", ex.getWeight()), String.format("%.1f", entry.getVolume())
                 });
 
+                // Input fields are no longer cleared since only the dropdown is present
+                
+                startTimerOnly();
+
             } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Unexpected error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                 JOptionPane.showMessageDialog(this, "An unexpected error occurred: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+        
+
+        // --- Data Persistence Logic ---
 
         private void saveProgress() {
             try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(PROGRESS_FILE))) {
@@ -645,55 +606,62 @@ public class GymTracker {
             }
         }
         
+        // --- HISTORY AND PROGRESS DISPLAY (Simplified) ---
+        
         private void updateHistoryAndProgressDisplays() {
+            // HISTORY
             StringBuilder hsb = new StringBuilder();
             DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("MMM d, yyyy HH:mm");
 
             for (WorkoutSession session : tracker.getHistory()) {
                 hsb.append("------------------------------------------\n");
                 hsb.append("🗓️ Session on ").append(session.getDate().format(dateFormatter)).append("\n");
-                
+                hsb.append("Total Volume: ").append(String.format("%.1f", session.getTotalVolume())).append("\n");
+                hsb.append("------------------------------------------\n");
+
+                // Group entries by exercise name for cleaner display
                 java.util.Map<String, List<WorkoutEntry>> grouped = session.getEntries().stream()
                     .collect(Collectors.groupingBy(e -> e.getExercise().getName()));
 
-                for(java.util.Map.Entry<String, List<WorkoutEntry>> entry : grouped.entrySet()) {
-                    String exerciseName = entry.getKey();
-                    int totalSets = entry.getValue().stream()
-                        .mapToInt(e -> e.getExercise().getSets())
-                        .sum();
+                for (Map.Entry<String, List<WorkoutEntry>> exerciseGroup : grouped.entrySet()) {
+                    String exerciseName = exerciseGroup.getKey();
                     
-                    WorkoutEntry bestEntry = entry.getValue().stream()
-                        .max(java.util.Comparator.comparingDouble(WorkoutEntry::getVolume))
-                        .orElse(null);
-
-                    if(bestEntry != null) {
-                        hsb.append(String.format(" %d sets x %s\n  Best set: %.1f lb x %d reps\n", 
-                            totalSets, exerciseName, bestEntry.getExercise().getWeight(), bestEntry.getExercise().getReps()));
-                    }
-                }
+                    // Shows only exercise name (as requested)
+                    hsb.append(" - **").append(exerciseName).append("**\n");
+                } 
                 hsb.append("\n");
-            }
+            } 
             historyTextArea.setText(hsb.toString());
 
+            // --- PROGRESS ---
             StringBuilder psb = new StringBuilder();
-            psb.append("📊 Overall Statistics:\n");
-            psb.append(" Total Sessions: ").append(tracker.getTotalSessions()).append("\n");
-            psb.append(" Total Volume All Time: ").append(String.format("%.1f", tracker.getTotalVolumeAllTime())).append(" lb\n\n");
+            psb.append("TOTAL WORKOUT SESSIONS: ").append(tracker.getTotalSessions()).append("\n");
+            psb.append("TOTAL VOLUME LIFTED ALL TIME: ").append(String.format("%.1f", tracker.getTotalVolumeAllTime())).append("\n\n");
 
-            psb.append("🏆 Personal Records (Estimated 1RM):\n");
-            for (String ex : library.getExercises()) {
-                String name = ex.split(" \\(")[0];
-                double pr = tracker.getExercisePR(name);
-                psb.append(String.format(" %s: %.1f lb\n", name, pr));
+            // Find PRs for each exercise name
+            List<String> uniqueExercises = tracker.getHistory().stream()
+                    .flatMap(s -> s.getEntries().stream())
+                    .map(e -> e.getExercise().getName())
+                    .distinct()
+                    .collect(Collectors.toList());
+
+            psb.append("PERSONAL RECORD ESTIMATES (1RM):\n");
+            for (String exerciseName : uniqueExercises) {
+                double pr = tracker.getExercisePR(exerciseName);
+                psb.append(" - ").append(exerciseName)
+                        .append(": ").append(String.format("%.1f", pr)).append(" lbs\n");
             }
+
             progressStatsArea.setText(psb.toString());
-        }
-    }
+        } 
+        
+    } // End of GymTrackerGUI class
 
     // ========================================================
-    // MAIN
+    // STEP 8: MAIN METHOD
     // ========================================================
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new GymTrackerGUI());
+        SwingUtilities.invokeLater(GymTrackerGUI::new);
     }
-}
+    
+} // End of GymTracker class
