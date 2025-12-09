@@ -233,8 +233,8 @@ public class GymTracker {
             
             getContentPane().setBackground(DARK_BACKGROUND);
             
-            JLabel titleLabel = new JLabel("💪  Sculpt", SwingConstants.CENTER);
-            titleLabel.setFont(new Font("SansSerif", Font.BOLD, 24));
+            JLabel titleLabel = new JLabel("Sculpt", SwingConstants.CENTER);
+            titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
             titleLabel.setForeground(TEXT_COLOR);
             titleLabel.setBorder(BorderFactory.createEmptyBorder(15, 0, 15, 0));
             add(titleLabel, BorderLayout.NORTH);
@@ -252,7 +252,7 @@ public class GymTracker {
         
         private JTabbedPane createTabbedPane() {
             JTabbedPane tp = new JTabbedPane();
-            tp.setFont(new Font("SansSerif", Font.BOLD, 14));
+            tp.setFont(new Font("Segoe UI", Font.BOLD, 14));
             tp.setForeground(TEXT_COLOR);
             tp.setBackground(new Color(38, 38, 40));
             tp.setOpaque(true);
@@ -314,7 +314,7 @@ public class GymTracker {
             button.setHorizontalAlignment(SwingConstants.LEFT);
             button.setBackground(CARD_BACKGROUND);
             button.setForeground(TEXT_COLOR);
-            button.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            button.setFont(new Font("Segoe UI", Font.PLAIN, 12));
             button.setFocusPainted(false);
             button.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(new Color(60, 60, 60)),
@@ -367,7 +367,7 @@ public class GymTracker {
             JButton finishButton = new JButton("FINISH SESSION");
             finishButton.setBackground(ACCENT_RED);
             finishButton.setForeground(Color.WHITE);
-            finishButton.setFont(new Font("SansSerif", Font.BOLD, 14));
+            finishButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
             finishButton.setFocusPainted(false);
             finishButton.addActionListener(e -> finishWorkout());
             topControl.add(finishButton, BorderLayout.EAST);
@@ -402,7 +402,7 @@ public class GymTracker {
             panel.setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createLineBorder(new Color(80, 80, 80)), "Add Exercise", 
                 javax.swing.border.TitledBorder.LEFT, javax.swing.border.TitledBorder.TOP, 
-                new Font("SansSerif", Font.BOLD, 14), TEXT_COLOR));
+                new Font("Segoe UI", Font.BOLD, 14), TEXT_COLOR));
             
             JPanel fieldsPanel = new JPanel(new GridBagLayout());
             fieldsPanel.setBackground(CARD_BACKGROUND);
@@ -509,14 +509,14 @@ public class GymTracker {
             JLabel label = new JLabel(text);
             label.setForeground(TEXT_COLOR);
             int style = bold ? Font.BOLD : Font.PLAIN;
-            label.setFont(new Font("SansSerif", style, size));
+            label.setFont(new Font("Segoe UI", style, size));
             return label;
         }
 
         private void stylePrimaryButton(JButton button) {
             button.setBackground(ACCENT_BLUE);
             button.setForeground(Color.WHITE);
-            button.setFont(new Font("SansSerif", Font.BOLD, 14));
+            button.setFont(new Font("Segoe UI", Font.BOLD, 14));
             button.setFocusPainted(false);
             button.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
         }
@@ -558,9 +558,9 @@ public class GymTracker {
             table.setGridColor(new Color(60, 60, 60));
             table.getTableHeader().setBackground(new Color(50, 50, 50));
             table.getTableHeader().setForeground(TEXT_COLOR);
-            table.getTableHeader().setFont(new Font("SansSerif", Font.BOLD, 12));
+            table.getTableHeader().setFont(new Font("Segoe UI", Font.BOLD, 12));
             table.setRowHeight(25);
-            table.setFont(new Font("SansSerif", Font.PLAIN, 12));
+            table.setFont(new Font("Segoe UI", Font.PLAIN, 12));
         }
 
         public void startNewSession(String name) {
