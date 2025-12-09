@@ -1,3 +1,6 @@
+import javax.swing.*;
+import javax.swing.plaf.nimbus.NimbusLookAndFeel;
+import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.io.*;
 import java.time.LocalDateTime;
@@ -8,15 +11,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.swing.*;
-import javax.swing.plaf.nimbus.NimbusLookAndFeel;
-import javax.swing.table.DefaultTableModel;
-
 
 public class GymTracker {
 
     // ========================================================
-    // STEP 1-5: Data Classes (Unchanged)
+    // STEP 1-5: Data Classes
     // ========================================================
 
     static abstract class Exercise implements Serializable {
@@ -103,9 +102,9 @@ public class GymTracker {
     }
 
     // ========================================================
-    // STEP 6: ExerciseLibrary & WorkoutTemplate (Unchanged)
+    // STEP 6: ExerciseLibrary & WorkoutTemplate
     // ========================================================
-    
+
     static class WorkoutTemplate {
         String name;
         String[] exercises;
@@ -121,21 +120,50 @@ public class GymTracker {
             return exercises[0] + (exercises.length > 1 ? ", " + exercises[1] + ", ..." : "");
         }
     }
-    
+
     static class ExerciseLibrary {
         private java.util.ArrayList<String> exercises;
         private java.util.List<WorkoutTemplate> templates;
 
         public ExerciseLibrary() {
             exercises = new java.util.ArrayList<>();
-            exercises.add("Triceps Extension (Arms)");
-            exercises.add("Lateral Raise (Shoulders)");
-            exercises.add("Incline Chest Press (Chest)");
-            exercises.add("Bicep Curl (Arms)");
-            exercises.add("Preacher Curl (Arms)");
-            exercises.add("Squat (Legs)");
+            //Chest
+            exercises.add("Bench Press (Chest)");
+            exercises.add("Dumbbell Fly (Chest)");
+            exercises.add("Push-Up (Chest)");
+            exercises.add("Cable Crossover (Chest)");
+
+            //Back
             exercises.add("Deadlift (Back)");
+            exercises.add("Pull-Up (Back)");
+            exercises.add("Barbell Row (Back)");
+            exercises.add("Lat Pulldown (Back)");
+
+            //Shoulders
+            exercises.add("Overhead Press (Shoulders)");
+            exercises.add("Lateral Raise (Shoulders)");
+            exercises.add("Front Raise (Shoulders)");
+            exercises.add("Face Pull (Shoulders)");
+
+            //Legs
+            exercises.add("Squat (Legs)");
             exercises.add("Leg Press (Legs)");
+            exercises.add("Romanian Deadlift (Legs)");
+            exercises.add("Leg Extension (Legs)");
+            exercises.add("Leg Curl (Legs)");
+            exercises.add("Calf Raise (Legs)");
+
+            //Arms
+            exercises.add("Barbell Curl (Arms)");
+            exercises.add("Hammer Curl (Arms)");
+            exercises.add("Triceps Pushdown (Arms)");
+            exercises.add("Overhead Triceps Extension (Arms)");
+
+            //Core
+            exercises.add("Plank (Core)");
+            exercises.add("Crunches (Core)");
+            exercises.add("Hanging Leg Raise (Core)");
+            exercises.add("Russian Twist (Core)");
 
             templates = new ArrayList<>();
             templates.add(new WorkoutTemplate("Upper Body", new String[]{
@@ -185,7 +213,7 @@ public class GymTracker {
         private final Color CARD_BACKGROUND = new Color(45, 45, 50);
         private final Color TEXT_COLOR = new Color(240, 240, 240);
         private final Color ACCENT_BLUE = new Color(50, 150, 255);
-        private final Color ACCENT_RED = new Color(255, 69, 58);
+        private final Color ACCENT_GREEN= new Color(0, 117, 94);
 
         public GymTrackerGUI() {
             loadProgress();
@@ -314,8 +342,8 @@ public class GymTracker {
             button.setFont(new Font("Segoe UI", Font.PLAIN, 12));
             button.setFocusPainted(false);
             button.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(new Color(60, 60, 60)),
-                    BorderFactory.createEmptyBorder(10, 10, 10, 10)
+                BorderFactory.createLineBorder(new Color(60, 60, 60)),
+                BorderFactory.createEmptyBorder(10, 10, 10, 10)
             ));
 
             // Load template exercises when clicked
@@ -346,7 +374,7 @@ public class GymTracker {
                 currentSession.addEntry(entry);
 
                 currentWorkoutTableModel.addRow(new Object[]{
-                        name, "-", "-", "-", "-"
+                    name, "-", "-", "-", "-"
                 });
             }
         }
@@ -363,7 +391,7 @@ public class GymTracker {
             topControl.add(timerLabel, BorderLayout.WEST);
             
             JButton finishButton = new JButton("FINISH SESSION");
-            finishButton.setBackground(ACCENT_RED);
+            finishButton.setBackground(ACCENT_GREEN);
             finishButton.setForeground(Color.WHITE);
             finishButton.setFont(new Font("Segoe UI", Font.BOLD, 14));
             finishButton.setFocusPainted(false);
@@ -379,7 +407,20 @@ public class GymTracker {
 
             String[] columns = {"Exercise", "Sets", "Reps", "Weight (lb)", "Volume"};
             currentWorkoutTableModel = new DefaultTableModel(columns, 0);
-            JTable currentWorkoutTable = new JTable(currentWorkoutTableModel);
+            JTable currentWorkoutTable = new JTable(currentWorkoutTableModel) {
+                // Make only the "Sets", "Reps", and "Weight" columns editable.
+                @Override
+                public boolean isCellEditable(int row, int column) {
+                    return column == 1 || column == 2 || column == 3;
+                }
+            };
+
+            // Add a listener to handle cell edits.
+            currentWorkoutTable.getModel().addTableModelListener(e -> {
+                if (e.getType() == javax.swing.event.TableModelEvent.UPDATE) {
+                    updateExerciseFromTable(e.getFirstRow(), e.getColumn());
+                }
+            });
             styleDesktopTable(currentWorkoutTable);
             JScrollPane tableScroll = new JScrollPane(currentWorkoutTable);
             tableScroll.getViewport().setBackground(CARD_BACKGROUND);
@@ -411,7 +452,7 @@ public class GymTracker {
             styleDropdown(exerciseDropdown);
             fixComboBoxRenderer(exerciseDropdown); // Retains light background for choices
 
-            JButton addButton = new JButton("ADD SET");
+            JButton addButton = new JButton("Add Exercise");
             stylePrimaryButton(addButton);
             addButton.addActionListener(e -> addEntry());
             
@@ -459,7 +500,7 @@ public class GymTracker {
             
             historyTextArea = new JTextArea();
             historyTextArea.setEditable(false);
-            historyTextArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+            historyTextArea.setFont(new Font("Segoe UI", Font.PLAIN, 12));
             historyTextArea.setBackground(CARD_BACKGROUND);
             historyTextArea.setForeground(TEXT_COLOR);
             historyTextArea.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -479,7 +520,7 @@ public class GymTracker {
 
             progressStatsArea = new JTextArea();
             progressStatsArea.setEditable(false);
-            progressStatsArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
+            progressStatsArea.setFont(new Font("Segoe UI", Font.PLAIN, 14));
             progressStatsArea.setBackground(CARD_BACKGROUND);
             progressStatsArea.setForeground(TEXT_COLOR);
             progressStatsArea.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
@@ -623,11 +664,43 @@ public class GymTracker {
 
                 // The table will show the placeholder values now: 1, 1, 0.0, 0.0
                 currentWorkoutTableModel.addRow(new Object[]{
-                        name, sets, reps, String.format("%.1f", weight), String.format("%.1f", entry.getVolume())
+                    name, sets, reps, String.format("%.1f", weight), String.format("%.1f", entry.getVolume())
                 });
 
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Unexpected error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+
+        /**
+         * Updates the underlying WorkoutEntry when a user edits a cell in the table.
+         */
+        private void updateExerciseFromTable(int row, int column) {
+            if (row >= currentSession.getEntries().size()) return;
+
+            WorkoutEntry entryToUpdate = currentSession.getEntries().get(row);
+            StrengthExercise exercise = entryToUpdate.getExercise();
+
+            try {
+                // Get the new value from the table model
+                String valueStr = currentWorkoutTableModel.getValueAt(row, column).toString();
+
+                if (column == 1) { // Sets
+                    exercise.sets = Integer.parseInt(valueStr);
+                } else if (column == 2) { // Reps
+                    exercise.reps = Integer.parseInt(valueStr);
+                } else if (column == 3) { // Weight
+                    exercise.weight = Double.parseDouble(valueStr);
+                }
+
+                // Recalculate volume and update the "Volume" column in the table
+                // Use SwingUtilities to avoid potential threading issues with table model updates
+                SwingUtilities.invokeLater(() -> {
+                    currentWorkoutTableModel.setValueAt(String.format("%.1f", entryToUpdate.getVolume()), row, 4);
+                });
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "Invalid input. Please enter a valid number.", "Input Error", JOptionPane.ERROR_MESSAGE);
             }
         }
 
@@ -651,7 +724,7 @@ public class GymTracker {
 
             for (WorkoutSession session : tracker.getHistory()) {
                 hsb.append("------------------------------------------\n");
-                hsb.append("🗓️ Session on ").append(session.getDate().format(dateFormatter)).append("\n");
+                hsb.append(" Session on ").append(session.getDate().format(dateFormatter)).append("\n");
                 
                 java.util.Map<String, List<WorkoutEntry>> grouped = session.getEntries().stream()
                     .collect(Collectors.groupingBy(e -> e.getExercise().getName()));
@@ -667,7 +740,7 @@ public class GymTracker {
                         .orElse(null);
 
                     if(bestEntry != null) {
-                        hsb.append(String.format(" %d sets x %s\n  Best set: %.1f lb x %d reps\n", 
+                        hsb.append(String.format(" %d sets x %s\n  Best set: %.1f lb x %d reps\n", 
                             totalSets, exerciseName, bestEntry.getExercise().getWeight(), bestEntry.getExercise().getReps()));
                     }
                 }
@@ -676,23 +749,34 @@ public class GymTracker {
             historyTextArea.setText(hsb.toString());
 
             StringBuilder psb = new StringBuilder();
-            psb.append("📊 Overall Statistics:\n");
+            psb.append(" Overall Statistics:\n");
             psb.append(" Total Sessions: ").append(tracker.getTotalSessions()).append("\n");
             psb.append(" Total Volume All Time: ").append(String.format("%.1f", tracker.getTotalVolumeAllTime())).append(" lb\n\n");
 
-            psb.append("🏆 Personal Records (Estimated 1RM):\n");
-            for (String ex : library.getExercises()) {
-                String name = ex.split(" \\(")[0];
-                double pr = tracker.getExercisePR(name);
-                psb.append(String.format(" %s: %.1f lb\n", name, pr));
+            psb.append(" Personal Records (Estimated 1RM):\n");
+            
+            // Group exercises by muscle group for the Progress tab
+            // LinkedHashMap is used to maintain the insertion order (Chest, Back, Shoulders, etc.)
+            java.util.Map<String, List<String>> exercisesByMuscle = new java.util.LinkedHashMap<>();
+            for (String fullExercise : library.getExercises()) {
+                String[] parts = fullExercise.split(" \\(");
+                String name = parts[0];
+                String muscle = parts.length > 1 ? parts[1].replace(")", "") : "Other";
+                exercisesByMuscle.computeIfAbsent(muscle, k -> new java.util.ArrayList<>()).add(name);
             }
+            
+            // Iterate through grouped exercises to display PRs with headings
+            for (java.util.Map.Entry<String, List<String>> muscleEntry : exercisesByMuscle.entrySet()) {
+                psb.append("\n --- ").append(muscleEntry.getKey().toUpperCase()).append(" ---\n");
+                for (String name : muscleEntry.getValue()) {
+                    double pr = tracker.getExercisePR(name);
+                    psb.append(String.format(" %s: %.1f lb\n", name, pr));
+                }
+            }
+
             progressStatsArea.setText(psb.toString());
         }
     }
-
-    // ========================================================
-    // MAIN
-    // ========================================================
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new GymTrackerGUI());
     }
