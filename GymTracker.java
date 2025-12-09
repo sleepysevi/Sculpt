@@ -12,9 +12,6 @@ import javax.swing.*;
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import javax.swing.table.DefaultTableModel;
 
-// ========================================================
-//     DESKTOP WORKOUT TRACKER (SIMPLIFIED INPUT)
-// ========================================================
 
 public class GymTracker {
 
@@ -194,7 +191,7 @@ public class GymTracker {
             loadProgress();
             currentSession = new WorkoutSession();
 
-            setTitle("Modern Workout Tracker");
+            setTitle("Sculpt");
             setSize(900, 700);
             setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -240,9 +237,9 @@ public class GymTracker {
             add(titleLabel, BorderLayout.NORTH);
 
             tabbedPane = createTabbedPane();
-            tabbedPane.addTab("💪 Workout", createWorkoutScreen());
-            tabbedPane.addTab("🗓️ History", createHistoryScreen());
-            tabbedPane.addTab("🏆 Progress", createProgressScreen());
+            tabbedPane.addTab("Workout", createWorkoutScreen());
+            tabbedPane.addTab("History", createHistoryScreen());
+            tabbedPane.addTab("Progress", createProgressScreen());
             add(tabbedPane, BorderLayout.CENTER);
 
             updateHistoryAndProgressDisplays();
