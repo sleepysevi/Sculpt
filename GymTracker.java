@@ -13,13 +13,13 @@ import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import javax.swing.table.DefaultTableModel;
 
 // ========================================================
-//     DESKTOP WORKOUT TRACKER (TEMPLATE + FIXED DROPDOWN)
+//     DESKTOP WORKOUT TRACKER (SIMPLIFIED INPUT)
 // ========================================================
 
 public class GymTracker {
 
     // ========================================================
-    // STEP 1-5: Data Classes
+    // STEP 1-5: Data Classes (Unchanged)
     // ========================================================
 
     static abstract class Exercise implements Serializable {
@@ -106,7 +106,7 @@ public class GymTracker {
     }
 
     // ========================================================
-    // STEP 6: ExerciseLibrary & WorkoutTemplate
+    // STEP 6: ExerciseLibrary & WorkoutTemplate (Unchanged)
     // ========================================================
     
     static class WorkoutTemplate {
@@ -163,7 +163,7 @@ public class GymTracker {
 
 
     // ========================================================
-    // STEP 7: GUI
+    // STEP 7: GUI (Modified)
     // ========================================================
     static class GymTrackerGUI extends JFrame {
 
@@ -182,7 +182,7 @@ public class GymTracker {
         private JTextArea progressStatsArea;
 
         private JComboBox<String> exerciseDropdown;
-        private JTextField setsField, repsField, weightField;
+        // Sets, reps, and weight fields are REMOVED to simplify input
         
         private final Color DARK_BACKGROUND = new Color(28, 28, 30);
         private final Color CARD_BACKGROUND = new Color(45, 45, 50);
@@ -194,7 +194,7 @@ public class GymTracker {
             loadProgress();
             currentSession = new WorkoutSession();
 
-            setTitle("Sculpt");
+            setTitle("Modern Workout Tracker");
             setSize(900, 700);
             setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -224,7 +224,7 @@ public class GymTracker {
                 UIManager.put("TextField.selectionBackground", new Color(40, 40, 40));
                 UIManager.put("TextField.selectionForeground", Color.WHITE);
 
-// also ensure combo editor follows same defaults
+                // also ensure combo editor follows same defaults
                 UIManager.put("ComboBox.background", Color.WHITE); // editor field we'll style manually
                 UIManager.put("ComboBox.foreground", Color.BLACK);
 
@@ -342,6 +342,7 @@ public class GymTracker {
                 String name = parts[0];
                 String muscle = parts.length > 1 ? parts[1].replace(")", "") : "";
 
+                // Sets the template exercises with placeholder values 
                 StrengthExercise exercise = new StrengthExercise(name, muscle, 0, 0, 0);
                 WorkoutEntry entry = new WorkoutEntry(exercise);
 
@@ -404,45 +405,32 @@ public class GymTracker {
                 javax.swing.border.TitledBorder.LEFT, javax.swing.border.TitledBorder.TOP, 
                 new Font("Segoe UI", Font.BOLD, 14), TEXT_COLOR));
             
-            JPanel fieldsPanel = new JPanel(new GridBagLayout());
+            // Using a flow layout for simple horizontal alignment of the two remaining components
+            JPanel fieldsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
             fieldsPanel.setBackground(CARD_BACKGROUND);
-            GridBagConstraints gbc = new GridBagConstraints();
-            gbc.insets = new Insets(5, 5, 5, 5);
-            gbc.fill = GridBagConstraints.HORIZONTAL;
             
             exerciseDropdown = new JComboBox<>(library.getExercises().toArray(new String[0]));
             // Apply light background and readable text for editor and popup renderer
             styleDropdown(exerciseDropdown);
-            fixComboBoxRenderer(exerciseDropdown);
+            fixComboBoxRenderer(exerciseDropdown); // Retains light background for choices
 
-            setsField = createDarkTextField(5);
-            repsField = createDarkTextField(5);
-            weightField = createDarkTextField(5);
-            
-            gbc.gridy = 0;
-            gbc.weightx = 0.1; gbc.gridx = 0; fieldsPanel.add(createStyledLabel("Exercise:", 12, false), gbc);
-            gbc.gridx = 1; fieldsPanel.add(createStyledLabel("Sets:", 12, false), gbc);
-            gbc.gridx = 2; fieldsPanel.add(createStyledLabel("Reps:", 12, false), gbc);
-            gbc.gridx = 3; fieldsPanel.add(createStyledLabel("Weight (lb):", 12, false), gbc);
-
-            gbc.gridy = 1;
-            gbc.weightx = 0.4; gbc.gridx = 0; fieldsPanel.add(exerciseDropdown, gbc);
-            gbc.weightx = 0.1; gbc.gridx = 1; fieldsPanel.add(setsField, gbc);
-            gbc.gridx = 2; fieldsPanel.add(repsField, gbc);
-            gbc.gridx = 3; fieldsPanel.add(weightField, gbc);
-            
             JButton addButton = new JButton("ADD SET");
             stylePrimaryButton(addButton);
             addButton.addActionListener(e -> addEntry());
             
-            gbc.gridy = 1; gbc.gridx = 4; gbc.weightx = 0.2;
-            fieldsPanel.add(addButton, gbc);
+            // Only the dropdown and button remain
+            fieldsPanel.add(createStyledLabel("Exercise:", 12, false));
+            fieldsPanel.add(exerciseDropdown);
+            fieldsPanel.add(addButton);
 
             panel.add(fieldsPanel, BorderLayout.CENTER);
             return panel;
         }
 
-        // Custom renderer to ensure the combo popup is white with black text & readable selection
+        /**
+         * Custom renderer to ensure the combo popup list items have the correct background and foreground color.
+         * The background is now explicitly set to WHITE for unselected items.
+         */
         private void fixComboBoxRenderer(JComboBox<String> box) {
             box.setRenderer(new DefaultListCellRenderer() {
                 @Override
@@ -453,10 +441,12 @@ public class GymTracker {
                     Component c = super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
 
                     if (isSelected) {
+                        // Background color when selected (light blue)
                         c.setBackground(new Color(220, 240, 255));
                         c.setForeground(Color.BLACK);
                     } else {
-                        c.setBackground(Color.WHITE);
+                        // Light Gray background for unselected choices
+                        c.setBackground(Color.WHITE); // *** CHANGED TO PURE WHITE ***
                         c.setForeground(Color.BLACK);
                     }
 
@@ -522,25 +512,24 @@ public class GymTracker {
         }
 
         private JTextField createDarkTextField(int columns) {
-    JTextField field = new JTextField(columns) {
-        @Override
-        public void updateUI() {
-            super.updateUI();
-            // Force colors after Nimbus resets them
-            setBackground(Color.BLACK);
-            setForeground(Color.WHITE);
-            setCaretColor(Color.WHITE);
-            setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100), 1));
+            // NOTE: This method is now obsolete as text fields are removed, but kept here for potential future use.
+            JTextField field = new JTextField(columns) {
+                @Override
+                public void updateUI() {
+                    super.updateUI();
+                    // Force colors after Nimbus resets them
+                    setBackground(Color.BLACK);
+                    setForeground(Color.WHITE);
+                    setCaretColor(Color.WHITE);
+                    setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100), 1));
+                }
+            };
+            field.setBackground(Color.BLACK);
+            field.setForeground(Color.WHITE);
+            field.setCaretColor(Color.WHITE);
+            field.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100), 1));
+            return field;
         }
-    };
-
-    // Also set initially (before Nimbus loads)
-    field.setBackground(Color.BLACK);
-    field.setForeground(Color.WHITE);
-    field.setCaretColor(Color.WHITE);
-    field.setBorder(BorderFactory.createLineBorder(new Color(100, 100, 100), 1));
-    return field;
-}
 
         
         private void styleDropdown(JComboBox<String> dropdown) {
@@ -610,15 +599,22 @@ public class GymTracker {
             JOptionPane.showMessageDialog(this, "Session saved!", "Success", JOptionPane.INFORMATION_MESSAGE);
         }
 
+        /**
+         * Simplified addEntry method. Uses placeholder values for Sets, Reps, and Weight
+         * since input fields were removed.
+         */
         private void addEntry() {
             try {
                 String selected = (String) exerciseDropdown.getSelectedItem();
-                int sets = Integer.parseInt(setsField.getText());
-                int reps = Integer.parseInt(repsField.getText());
-                double weight = Double.parseDouble(weightField.getText());
+                
+                // === PLACEHOLDER VALUES ===
+                int sets = 1;
+                int reps = 1;
+                double weight = 0.0;
+                // ==========================
 
-                if (sets <= 0 || reps <= 0 || weight <= 0)
-                    throw new NumberFormatException();
+                if (selected == null || selected.isEmpty())
+                    return;
 
                 String[] parts = selected.split(" \\(");
                 String name = parts[0];
@@ -628,16 +624,11 @@ public class GymTracker {
                 WorkoutEntry entry = new WorkoutEntry(ex);
                 currentSession.addEntry(entry);
 
+                // The table will show the placeholder values now: 1, 1, 0.0, 0.0
                 currentWorkoutTableModel.addRow(new Object[]{
                         name, sets, reps, String.format("%.1f", weight), String.format("%.1f", entry.getVolume())
                 });
 
-                setsField.setText("");
-                repsField.setText("");
-                weightField.setText("");
-
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "Input must be positive numbers.", "Error", JOptionPane.ERROR_MESSAGE);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Unexpected error: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
